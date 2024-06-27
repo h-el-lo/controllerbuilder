@@ -1,3 +1,5 @@
+// This is a file for merging the and testing the entire code.
+
 #include "MIDIUSB.h"
 #include <ResponsiveAnalogRead.h>
 
