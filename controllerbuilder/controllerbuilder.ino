@@ -88,4 +88,5 @@ void loop() {
 
 
 // Add support for exression pedal, four pin 6.35 mm jack, pin four for presence checker
+// Add support for WS2812B RGB LED
 
