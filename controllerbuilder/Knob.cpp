@@ -2,18 +2,18 @@
 #include "MIDIHelper.h"
 
 // Constructors
-Knob::Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max, uint8_t channel, bool isEnabled)
-  : ResponsiveAnalogRead(0, true, snapMultiplier), _potPin(potPin), _CCNumber(CCNumber), _min(min), _max(max), _channel(channel), _isEnabled(isEnabled) {
+Knob::Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue, uint8_t channel, bool isEnabled)
+  : ResponsiveAnalogRead(0, true, snapMultiplier), _potPin(potPin), _CCNumber(CCNumber), _minCCValue(minCCValue), _maxCCValue(maxCCValue), _channel(channel), _isEnabled(isEnabled) {
   pinMode(_potPin, INPUT);
   ResponsiveAnalogRead().setAnalogResolution(1023);
 }
 
-Knob::Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max, uint8_t channel)
-  : Knob(potPin, CCNumber, min, max, channel, true) {
+Knob::Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue, uint8_t channel)
+  : Knob(potPin, CCNumber, minCCValue, maxCCValue, channel, true) {
 }
 
-Knob::Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max)
-  : Knob(potPin, CCNumber, min, max, GLOBAL_MIDI_CHANNEL, true) {
+Knob::Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue)
+  : Knob(potPin, CCNumber, minCCValue, maxCCValue, GLOBAL_MIDI_CHANNEL, true) {
 }
 
 Knob::Knob(uint8_t potPin, uint8_t CCNumber)
@@ -26,7 +26,7 @@ uint8_t Knob::getCCNumber() const {
 }
 
 Knob::MinMax Knob::getMinMax() const {
-  return { _min, _max };
+  return { _minCCValue, _maxCCValue };
 }
 
 // Setters
@@ -35,11 +35,11 @@ void Knob::setMIDIChannel(uint8_t channel) {
 }
 
 void Knob::setMin(uint8_t minCCValue) {
-  _min = constrain(minCCValue, 0, 127);
+  _minCCValue = constrain(minCCValue, 0, 127);
 }
 
 void Knob::setMax(uint8_t maxCCValue) {
-  _max = constrain(maxCCValue, 0, 127);
+  _maxCCValue = constrain(maxCCValue, 0, 127);
 }
 
 // Methods
@@ -60,7 +60,7 @@ void Knob::update() {
   if (Knob::_isEnabled) {
     readKnob();
     validateAnalogRead(_potState);
-    _midiState = map(_potState, 0, 1023, _min, _max);
+    _midiState = map(_potState, 0, 1023, _minCCValue, _maxCCValue);
 
     static uint16_t potIncrement = abs(_potState - _potPState);
 

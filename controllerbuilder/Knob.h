@@ -11,8 +11,8 @@ private:
   uint8_t _potPin;  // Mux channel connected to potentiometer
   uint8_t _CCNumber;
   uint8_t _channel;
-  uint8_t _min;  // Minimum CC value
-  uint8_t _max;  // Maximum CC value
+  uint8_t _minCCValue;  // Minimum CC value
+  uint8_t _maxCCValue;  // Maximum CC value
   uint16_t _potState, _potPState;
   uint8_t _midiState = 0;
   uint8_t _midiPState = 0;
@@ -24,13 +24,13 @@ private:
 
 public:
   // Constructors
-  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max, uint8_t channel, bool isEnabled);
-  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max, uint8_t channel);
-  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max);
+  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue, uint8_t channel, bool isEnabled);
+  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue, uint8_t channel);
+  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue);
   Knob(uint8_t potPin, uint8_t CCNumber);
 
   struct MinMax {
-    uint8_t min, max;
+    uint8_t minCCValue, maxCCValue;
   };  // A struct to return the min and max values of the knob when getMinMax() is called.
 
   // Getters
