@@ -1,24 +1,12 @@
 #include "MIDIHelper.h"
 #include "Joystick.h"
 #include "Knob.h"
-#include "TouchSensor.h"
+#include "DamperPedal.h"
 
 // =================================  GLOBAL VARIABLES =================================
-uint8_t GLOBAL_MIDI_CHANNEL = 0;  // MIDI Channe 1
-// Global Analog Input Variables
-const int N_ANALOGS = 8;
-int analogPins[N_ANALOGS] = { A0, A1, A2, A3, A7, A8, A9, A10 };
-// =====================================================================================
-
-// ==================================  SUSTAIN PEDAL  ==================================
-uint8_t sustainPin = 7;
-uint8_t susRead;
-uint8_t susState = 0;
-uint16_t susPrevState = 0;
-// =====================================================================================
-
-// ====================================  JOYSTICK  =====================================
-Joystick joystick(2, 3);
+uint8_t GLOBAL_MIDI_CHANNEL = 0;  // MIDI Channel 1
+Damper_Pedal DamperPedal(5);
+Joystick joystick(A9, A8);
 // =====================================================================================
 
 // ======================================  KNOBS  ======================================
@@ -32,61 +20,26 @@ Knob knobset[NUM_OF_KNOBS]{
 };
 // =====================================================================================
 
-// ==================================  TOUCH SENSORS  ==================================
-const uint8_t NUM_OF_TOUCH_SENSORS = 4;
-TouchSensor touchSensors[NUM_OF_TOUCH_SENSORS] = {
-  TouchSensor(2, 24),
-  TouchSensor(4, 25),
-  TouchSensor(5, 26),
-  TouchSensor(6, 27),
-};
-// =====================================================================================
-
-
-
-
 
 void setup() {
   // put your setup code here, to run once:
-  pinMode(sustainPin, INPUT_PULLUP);
-  Serial.begin(9600);
+  Serial.begin(921600);
 }
 
 void loop() {
-  //=========================  READ SUSTAIN PEDAL  ============================
-  susRead = !digitalRead(sustainPin);
-  susState = map(susRead, 0, 1, 0, 127);
-
-  if (susState != susPrevState) {
-    controlChange(GLOBAL_MIDI_CHANNEL, 64, susState);
-    susPrevState = susState;
-  }
-  //===========================================================================
+  DamperPedal.update();  // Read and update sustain pedal
+  joystick.update();     // Read and update joystick
 
   //========================  READ EXPRESSION PEDAL  ==========================
   // EXPRESSIONPEDAL.update();
   //===========================================================================
 
-  //============================  READ JOYSTICK  ==============================
-  joystick.update();
-  //===========================================================================
-
   //===========================  READ ALL KNOBS  ==============================
-  // Reading of all potentiometers other than Pitch and Modulation Wheels
   for (uint8_t i = 0; i < NUM_OF_KNOBS; i++) {
     knobset[i].update();
   }
   //===========================================================================
-
-  //=======================  READ ALL TOUCH SENSORS  ==========================
-  for (uint8_t i = 0; i < NUM_OF_TOUCH_SENSORS; i++) {
-    touchSensors[i].update();
-  }
-  //===========================================================================
-
 }
 
-
-// Add support for exression pedal, four pin 6.35 mm jack, pin four for presence checker
+// Add support for exression pedal, four pin 6.35 mm jack, pin four for presence checker, pin A6
 // Add support for WS2812B RGB LED
-
