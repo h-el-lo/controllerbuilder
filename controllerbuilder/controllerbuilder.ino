@@ -2,21 +2,24 @@
 #include "Joystick.h"
 #include "Knob.h"
 #include "DamperPedal.h"
+#include "ExpressionPedal.h"
 
 // =================================  GLOBAL VARIABLES =================================
 uint8_t GLOBAL_MIDI_CHANNEL = 0;  // MIDI Channel 1
 Damper_Pedal DamperPedal(5);
+Expression_Pedal ExpressionPedal(6);
+Pitch_Wheel PitchWheel;
 Joystick joystick(A9, A8);
 // =====================================================================================
 
 // ======================================  KNOBS  ======================================
 const uint8_t NUM_OF_KNOBS = 5;
 Knob knobset[NUM_OF_KNOBS]{
-  Knob(A3, 24),
-  Knob(A2, 25),
-  Knob(A1, 26),
-  Knob(A0, 27),
-  Knob(A10, 7),
+  Knob(A6, 7),
+  Knob(A0, 24),
+  Knob(A1, 25),
+  Knob(A2, 26),
+  Knob(A3, 27),
 };
 // =====================================================================================
 
@@ -31,7 +34,7 @@ void loop() {
   joystick.update();     // Read and update joystick
 
   //========================  READ EXPRESSION PEDAL  ==========================
-  // EXPRESSIONPEDAL.update();
+  // ExpressionPedal.update();
   //===========================================================================
 
   //===========================  READ ALL KNOBS  ==============================
@@ -41,5 +44,4 @@ void loop() {
   //===========================================================================
 }
 
-// Add support for exression pedal, four pin 6.35 mm jack, pin four for presence checker, pin A6
 // Add support for WS2812B RGB LED

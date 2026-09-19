@@ -2,52 +2,69 @@
 #define KNOB_H
 
 #include <Arduino.h>
-#include <ResponsiveAnalogRead.h>
+#include "MIDIHelper.h"
 
-// Analog Input for Knobs and Faders alike
-class Knob : public ResponsiveAnalogRead {
-private:
-  bool _isEnabled;
-  uint8_t _potPin;  // Mux channel connected to potentiometer
+// Analog Inputs for Knobs and Faders alike
+
+// ========================  KNOB  =========================
+// =========================================================
+// Regular knobs connected directly to MCU's ADC pins
+
+class Knob {
+protected:
+  const uint8_t _potPin;  // Connected to MCU, ADS or MUX
   uint8_t _CCNumber;
-  uint8_t _channel;
-  uint8_t _minCCValue;  // Minimum CC value
-  uint8_t _maxCCValue;  // Maximum CC value
-  uint16_t _potState, _potPState;
+  uint16_t _minAnalogValue = 0;     // Maximum analog value from potentiometer readings (0 - 1023) Read in 10 bits
+  uint16_t _maxAnalogValue = 1023;  // Maximum analog value from potentiometer readings (0 - 1023) Read in 10 bits
+  uint8_t _minCCValue = 0;          // Minimum CC value
+  uint8_t _maxCCValue = 127;        // Maximum CC value
+  int16_t _potState, _potPState;
   uint8_t _midiState = 0;
   uint8_t _midiPState = 0;
-  unsigned long lastUpdatedTime;  // Pot time recorder snapshot
-  inline static const uint8_t _potThreshold = 15;
-  inline static const uint8_t POT_TIMEOUT = 300;
-  // ResponsiveAnalogRead
-  inline static const float snapMultiplier = 0.01;
+  uint8_t _channel = 0;
+  bool _isEnabled;
 
-public:
+  unsigned long snapshot = millis();  // Pot time recorder snapshot
+  uint16_t _potIncrement = 0;
+  uint16_t _potTimer = 0;
+  static constexpr uint8_t _potThreshold = 3;
+  static constexpr uint16_t POT_TIMEOUT = 300;
+
   // Constructors
-  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue, uint8_t channel, bool isEnabled);
-  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue, uint8_t channel);
-  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t minCCValue, uint8_t maxCCValue);
+public:
+  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max, uint8_t channel, bool isEnabled);
+  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max, uint8_t channel);
+  Knob(uint8_t potPin, uint8_t CCNumber, uint8_t min, uint8_t max);
   Knob(uint8_t potPin, uint8_t CCNumber);
+  Knob(uint8_t potPin);
 
   struct MinMax {
-    uint8_t minCCValue, maxCCValue;
+    uint8_t min, max;
   };  // A struct to return the min and max values of the knob when getMinMax() is called.
 
   // Getters
   uint8_t getCCNumber() const;
+  uint8_t getMin() const;
+  uint8_t getMax() const;
   MinMax getMinMax() const;  // Returns min and max CC values of knob
+  virtual uint8_t getMIDIChannel() const;
 
   // Setters
-  void setMIDIChannel(uint8_t channel);
-  void setMin(uint8_t value);
-  void setMax(uint8_t value);
+  virtual void setPinMode();
+  virtual void setMIDIChannel(uint8_t channel);
+  void setAnalogMin(uint16_t minAnalogValue);
+  void setAnalogMax(uint16_t maxAnalogValue);
+  void setCCMin(uint8_t CCMinValue);
+  void setCCMax(uint8_t CCMaxValue);
 
   // Methods
+  void enable();
   void disable();
-  void readKnob();
-  void validateAnalogRead(uint16_t reading);
-  void update();
+  virtual void readKnob();
+  void validateAnalogRead();
+  virtual void update();
 };
-
+// =========================================================
+// =========================================================
 
 #endif

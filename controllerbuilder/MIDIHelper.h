@@ -21,8 +21,5 @@ inline void pitchBend(uint8_t channel, int value) {
 }
 
 inline void centerPitchWheel() {
-  uint8_t value = 0;
-  midiEventPacket_t event = { 0x0E, 0xE0 | GLOBAL_MIDI_CHANNEL, value & 0x7F, (value >> 7) & 0x7F };
-  MidiUSB.sendMIDI(event);
-  MidiUSB.flush();
+  pitchBend(GLOBAL_MIDI_CHANNEL, 8191);
 }

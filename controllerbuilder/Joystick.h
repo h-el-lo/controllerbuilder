@@ -2,31 +2,36 @@
 #define JOYSTICK_H
 
 #include <Arduino.h>
+#include "PitchWheel.h"
 #include <ResponsiveAnalogRead.h>
 
 class Joystick : public ResponsiveAnalogRead {
 private:
   // X variables
-  uint8_t _xAxisPin;
-  uint16_t _xState;
-  uint16_t _xPrevState;
-  unsigned long _xLastUpdatedTime;
+  Pitch_Wheel PitchWheel;
 
   // Y variables
   uint8_t _yAxisPin;
   uint8_t _yUpperCC;
   uint8_t _yLowerCC;
+
+  uint16_t _yMin = 0;
+  uint16_t _yCenter = 516;  // Physical center of axis reading
+  uint16_t _yMax = 1021;
+
+  uint8_t _threshold = 8;
+  uint8_t deadzoneRange = 4;
+  uint16_t _delta;
+
   uint16_t _yState;
   uint16_t _yPrevState;
-  unsigned long _yLastUpdatedTime;
+  uint8_t midiState;
+  uint16_t lastMidiState = 0;
 
-  // Shared variables
-  uint16_t axisTimeDifferential;
-  uint16_t axisCenter;  // Theoretical center of axes
-  uint8_t _threshold;
-  uint16_t deadzoneRange;
-  uint16_t _variation;
-  uint8_t TIMEOUT;
+  unsigned long _yLastUpdatedTime;
+  uint16_t timePassed;
+  uint16_t TIMEOUT = 250;
+  bool wheel_is_centered = false;
   // ResponsiveAnalogRead
   inline static const float snapMultiplier = 0.01;
 
@@ -40,11 +45,8 @@ public:
 
   // Setters
   void setDeadzoneRange();
-  void setYUpperCC();
-  void setYLowerCC();
 
   // Methods
-  void readXAxis();
   void readYAxis();
   void updateXAxis();
   void updateYAxis();

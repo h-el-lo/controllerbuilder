@@ -3,11 +3,9 @@
 
 // Constructors
 Joystick::Joystick(uint8_t xAxisPin, uint8_t yAxisPin, uint8_t yUpperCC, uint8_t yLowerCC)
-  : ResponsiveAnalogRead(0, true, snapMultiplier), _xAxisPin(xAxisPin), _yAxisPin(yAxisPin), _yUpperCC(yUpperCC), _yLowerCC(yLowerCC), axisCenter(512) {
-  pinMode(_xAxisPin, INPUT);
+  : ResponsiveAnalogRead(0, true, snapMultiplier), _yAxisPin(yAxisPin), _yUpperCC(yUpperCC), _yLowerCC(yLowerCC), _yCenter(512) {
   pinMode(_yAxisPin, INPUT);
   ResponsiveAnalogRead().setAnalogResolution(1023);
-  deadzoneRange = 5;
 }
 
 Joystick::Joystick(uint8_t xAxisPin, uint8_t yAxisPin)
@@ -21,69 +19,57 @@ void Joystick::setDeadzoneRange() {
   // Pass
 }
 
-void Joystick::setYUpperCC() {
-  // Pass
-}
-
-void Joystick::setYLowerCC() {
-  // Pass
-}
-
 // Methods
-void Joystick::readXAxis() {
-  ResponsiveAnalogRead::update(analogRead(_xAxisPin));
-  _xState = ResponsiveAnalogRead::getValue();
-}
-
 void Joystick::readYAxis() {
   _yState = analogRead(_yAxisPin);
 }
 
 void Joystick::updateXAxis() {
-  readXAxis();
-  _variation = abs(_xState - _xPrevState);
-
-  if (_variation > _threshold) {
-    _xLastUpdatedTime = millis();
-  }
-
-  axisTimeDifferential = millis() - _xLastUpdatedTime;
-  _xState = constrain(_xState, 0, 1023); // Correct overRead or underRead errors
-
-  if (axisTimeDifferential < TIMEOUT) {
-    if ((_xState <= axisCenter + deadzoneRange) && (_xState <= axisCenter - deadzoneRange)) {
-      centerPitchWheel();  // Center the pitch wheel
-    } else {
-      pitchBend(GLOBAL_MIDI_CHANNEL, map(_xState, 0, 1023, -8192, 8191));
-    }
-    _xPrevState = _xState;
-  }
+  PitchWheel.update();
 }
 
 void Joystick::updateYAxis() {
   readYAxis();
-  _variation = abs(_yState - _yPrevState);
+  _delta = abs(_yState - _yPrevState);
 
-  if (_variation > _threshold) {
+  if (_delta > _threshold) {
     _yLastUpdatedTime = millis();
   }
 
-  axisTimeDifferential = millis() - _yLastUpdatedTime;
+  timePassed = millis() - _yLastUpdatedTime;
   _yState = constrain(_yState, 0, 1023);
 
-  if (axisTimeDifferential < TIMEOUT) {
-    if ((_yState <= axisCenter + deadzoneRange) || (_yState <= axisCenter - deadzoneRange)) {
+  if (timePassed < TIMEOUT) {
+
+    // if within deadone range
+    if ((_yState <= _yCenter + deadzoneRange) && (_yState >= _yCenter - deadzoneRange)) {
       // If Wheel reading of Y Axis is within deadzone range, set value of both yUpperCC and yLowerCC to 0
-      controlChange(GLOBAL_MIDI_CHANNEL, _yLowerCC, 0);
-      controlChange(GLOBAL_MIDI_CHANNEL, _yUpperCC, 0);
+      if (!wheel_is_centered) {
+        controlChange(GLOBAL_MIDI_CHANNEL, _yLowerCC, 0);
+        controlChange(GLOBAL_MIDI_CHANNEL, _yUpperCC, 0);
+        wheel_is_centered = true;
+      }
 
-    } else if (_yState > axisCenter + deadzoneRange) {
-      // Upper section of Y Axis
-      controlChange(GLOBAL_MIDI_CHANNEL, _yUpperCC, map(_yState, 512, 1023, 0, 127));
+      // if outside of dead range zone
+    } else if ((_yState >= _yCenter + deadzoneRange) || (_yState <= _yCenter - deadzoneRange)) {
 
-    } else if (_yState < axisCenter + deadzoneRange) {
-      // Lower section of Y Axis
-      controlChange(GLOBAL_MIDI_CHANNEL, _yUpperCC, map(_yState, 512, 0, 0, 127));
+      uint8_t CCToSend;
+      if (_yState >= _yCenter + deadzoneRange) {
+        // Upper section of Y Axis
+        midiState = map(_yState, _yCenter, _yMax, 0, 127);
+        CCToSend = _yUpperCC;
+      } else if (_yState <= _yCenter - deadzoneRange) {
+        // Lower section of Y Axis
+        midiState = map(_yState, _yCenter, _yMin, 0, 127);
+        CCToSend = _yLowerCC;
+      }
+
+      if (midiState != lastMidiState) {
+        controlChange(GLOBAL_MIDI_CHANNEL, CCToSend, midiState);
+        lastMidiState = midiState;
+        wheel_is_centered = false;
+      }
+      // if reading is out of potentiometer's physical range
     } else {
       // Log PitchWheel Error
       Serial.println("PITCH_WHEEL_ERROR: Y_POT reading out of recognizable range.");
