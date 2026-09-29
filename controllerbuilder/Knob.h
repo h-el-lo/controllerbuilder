@@ -50,8 +50,8 @@ public:
   virtual uint8_t getMIDIChannel() const;
 
   // Setters
-  virtual void setPinMode();
-  virtual void setMIDIChannel(uint8_t channel);
+  void setPinMode();
+  void setMIDIChannel(uint8_t channel);
   void setAnalogMin(uint16_t minAnalogValue);
   void setAnalogMax(uint16_t maxAnalogValue);
   void setCCMin(uint8_t CCMinValue);

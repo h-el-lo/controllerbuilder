@@ -1,7 +1,4 @@
-// #include "RGB.h"
+#include "RGB.h"
 
-// RGB_LED_STRIP::RGB_LED_STRIP(uint16_t NUMPIXELS, uint8_t RGB_PIN)
-//   : Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800) {
-//     Adafruit_NeoPixel::begin();
-//     Adafruit_NeoPixel::setBrightness(255);
-// }
+// RGBStrip STRIP(NUM_OF_PIXELS, LED_PIN, BRIGHTNESS);
+RGBStrip MY_PIXEL(1, 16, 50);

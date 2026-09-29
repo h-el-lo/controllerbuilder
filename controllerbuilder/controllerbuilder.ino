@@ -3,11 +3,18 @@
 #include "Knob.h"
 #include "DamperPedal.h"
 #include "ExpressionPedal.h"
+#include "General.h"
+
+// =================================  General vars =================================
+Mode MODE = MODE_RUNNING;
+
+// =====================================================================================
+
 
 // =================================  GLOBAL VARIABLES =================================
 uint8_t GLOBAL_MIDI_CHANNEL = 0;  // MIDI Channel 1
 Damper_Pedal DamperPedal(5);
-Expression_Pedal ExpressionPedal(6);
+// Expression_Pedal ExpressionPedal(6);
 Pitch_Wheel PitchWheel;
 Joystick joystick(A9, A8);
 // =====================================================================================
@@ -30,18 +37,19 @@ void setup() {
 }
 
 void loop() {
-  DamperPedal.update();  // Read and update sustain pedal
-  joystick.update();     // Read and update joystick
+  if (MODE == MODE_RUNNING) {
+    MY_PIXEL.update();  // update RGB
 
-  //========================  READ EXPRESSION PEDAL  ==========================
-  // ExpressionPedal.update();
-  //===========================================================================
+    DamperPedal.update();  // Read and update sustain pedal
+    joystick.update();     // Read and update joystick
+    // ExpressionPedal.update(); // Read and update expression pedal
 
-  //===========================  READ ALL KNOBS  ==============================
-  for (uint8_t i = 0; i < NUM_OF_KNOBS; i++) {
-    knobset[i].update();
+    //===========================  READ ALL KNOBS  ==============================
+    for (uint8_t i = 0; i < NUM_OF_KNOBS; i++) {
+      knobset[i].update();
+    }
+    //===========================================================================
+  } else if (MODE == MODE_COLOR_EDIT) {
+    setColor();
   }
-  //===========================================================================
 }
-
-// Add support for WS2812B RGB LED
