@@ -11,7 +11,7 @@
 Mode MODE = MODE_RUNNING;
 uint8_t GLOBAL_MIDI_CHANNEL = 0;  // MIDI Channel 1
 
-Settings defaultSettings = { 0, RGB_MONTAGE, 10000, 255, 255, 50 };
+Settings defaultSettings = { 0, RGB_STATIC, 38000, 255, 255, 50 };
 Settings userSettings;
 bool userSettingsExists;
 

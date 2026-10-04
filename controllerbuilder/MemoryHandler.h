@@ -34,7 +34,7 @@ inline void saveUserSettings() {
   };
 
   EEPROMwl.put(USER_SETTINGS, userSettings);
-  Serial.println("User Settings Saved.");
+  Serial.println("User Settings Saved via saveUserSettings().");
 }
 
 inline void retrieveUserSettings() {
@@ -52,5 +52,5 @@ inline void settingsReset() {
 
   // Save reset user settings to EEPROM
   EEPROMwl.put(USER_SETTINGS, userSettings);
-  Serial.println("User Settings Saved.");
+  Serial.println("User Settings Reset via settingsReset().");
 }

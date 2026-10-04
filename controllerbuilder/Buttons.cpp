@@ -16,11 +16,13 @@ void Button::read() {
   if (millis() - _lastUpdated < DEBOUNCE_MS) return;
   _state = readHardware();
 
-  // if ((_state == _pState) && (millis() - _scanStartTime >= _resetTriggerTime)) {
-  //   // if button press is SUSTAINED (_state == _pState) for resetTriggerTime in ms
-  //   onResetDevice();
-  // } else
-  if (_state == _pState) {
+  if ((_state) && (_state == _pState) && (millis() - _scanStartTime >= _resetTriggerTime)) {
+    // if button press is SUSTAINED (_state == _pState) for resetTriggerTime in ms
+    onResetDevice();
+    _lastUpdated = millis();
+    _scanStartTime = millis();
+
+  } else if (_state == _pState) {
     return;
   }
 
@@ -78,5 +80,6 @@ void Button::onVeryLongPress() {
 
 void Button::onResetDevice() {
   settingsReset();
+  MY_PIXEL.deviceResetAnimmation();
   MODE = MODE_RUNNING;
 }

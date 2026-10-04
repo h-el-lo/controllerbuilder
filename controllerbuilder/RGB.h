@@ -162,6 +162,20 @@ public:
     _strip.setBrightness(_brightness);
   }
 
+  void deviceResetAnimmation() {
+    _strip.setBrightness(150);
+    for (int i = 0; i < 5; i++) {                                    // For each pixel in strip...
+      uint32_t color = _strip.gamma32(_strip.ColorHSV(10, 0, 255));  // hue -> RGB
+      _strip.setPixelColor(0, color);
+      _strip.show();  //  Update strip to match
+      delay(200);     //  Pause for a moment
+      _strip.clear();
+      _strip.show();  //  Update strip to match
+      delay(200);     //  Pause for a moment
+    }
+    _strip.setBrightness(_brightness);
+  }
+
   void channelEditAnimation() {
     uint16_t hue = GLOBAL_MIDI_CHANNEL * (65536 / 16);
     uint32_t color = _strip.gamma32(_strip.ColorHSV(hue));
