@@ -1,9 +1,10 @@
 #include "Joystick.h"
 #include "MIDIHelper.h"
+#include "ControllerModes.h"
 
 // Constructors
 Joystick::Joystick(uint8_t xAxisPin, uint8_t yAxisPin, uint8_t yUpperCC, uint8_t yLowerCC)
-  : ResponsiveAnalogRead(0, true, snapMultiplier), _yAxisPin(yAxisPin), _yUpperCC(yUpperCC), _yLowerCC(yLowerCC), _yCenter(512) {
+  : ResponsiveAnalogRead(0, true, snapMultiplier), _yAxisPin(yAxisPin), _yUpperCC(yUpperCC), _yLowerCC(yLowerCC), _yCenter(512), _joyButton(7) {
   pinMode(_yAxisPin, INPUT);
   ResponsiveAnalogRead().setAnalogResolution(1023);
 }
@@ -12,20 +13,62 @@ Joystick::Joystick(uint8_t xAxisPin, uint8_t yAxisPin)
   : Joystick(xAxisPin, yAxisPin, 1, 2) {  // Modulation Wheel CC01 [upper], Breath Controller CC02 [lower]
 }
 
-// Getters
-
-// Setters
-void Joystick::setDeadzoneRange() {
-  // Pass
-}
-
 // Methods
 void Joystick::readYAxis() {
   _yState = analogRead(_yAxisPin);
 }
 
+void Joystick::channelAndColorUpdate() {
+  uint8_t potPin = A9;
+  uint16_t minAnalog = 5;
+  uint16_t maxAnalog = 1013;
+
+  uint8_t minPoint = 1;
+  uint8_t maxPoint = 5;
+  uint8_t midPoint = (minPoint + maxPoint) / 2;
+
+  uint8_t reading = 0;
+  static uint8_t lastReading = 255;  // Sentinel value
+  static bool buttonIsPressed = false;
+
+  reading = map(analogRead(potPin), maxAnalog, minAnalog, minPoint, maxPoint);
+  if (reading != lastReading) {
+    if (!buttonIsPressed) {
+      if (reading == minPoint) {
+        if (MODE == MODE_CHANNEL_EDIT) {
+          GLOBAL_MIDI_CHANNEL--;
+          GLOBAL_MIDI_CHANNEL = ((GLOBAL_MIDI_CHANNEL % 16) + 16) % 16;
+
+        } else if (MODE == MODE_COLOR_EDIT) {
+          MY_PIXEL.previousColorMode();
+        }
+        buttonIsPressed = true;
+
+      } else if (reading == maxPoint) {
+        if (MODE == MODE_CHANNEL_EDIT) {
+          GLOBAL_MIDI_CHANNEL++;
+          GLOBAL_MIDI_CHANNEL = ((GLOBAL_MIDI_CHANNEL % 16) + 16) % 16;
+
+        } else if (MODE == MODE_COLOR_EDIT) {
+          MY_PIXEL.nextColorMode();
+        }
+        buttonIsPressed = true;
+      }
+
+    } else {
+      if (reading == midPoint)
+        buttonIsPressed = false;
+    }
+    lastReading = reading;
+  }
+}
+
 void Joystick::updateXAxis() {
-  PitchWheel.update();
+  if (MODE == MODE_RUNNING) {
+    PitchWheel.update();
+  } else {
+    Joystick::channelAndColorUpdate();
+  }
 }
 
 void Joystick::updateYAxis() {
@@ -70,15 +113,17 @@ void Joystick::updateYAxis() {
         wheel_is_centered = false;
       }
       // if reading is out of potentiometer's physical range
-    } else {
-      // Log PitchWheel Error
-      Serial.println("PITCH_WHEEL_ERROR: Y_POT reading out of recognizable range.");
-    }
+    } 
     _yPrevState = _yState;
   }
+}
+
+void Joystick::updateJoyButton() {
+  _joyButton.read();
 }
 
 void Joystick::update() {
   updateXAxis();
   updateYAxis();
+  updateJoyButton();
 }

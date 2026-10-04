@@ -1,34 +1,41 @@
+#include <stdint.h>
 #ifndef RGB_H
 #define RGB_H
 
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
+#include "ControllerModes.h"
+#include "MIDIHelper.h"
 
 #ifdef __AVR__
 #include <avr/power.h>  // Required for 16 MHz Adafruit Trinket
 #endif
 
 
-enum RGB_Mode {
+enum RGB_Mode : uint8_t {
   RGB_STATIC,
-  RGB_PULSAR,
+  // RGB_PULSAR,
   RGB_MONTAGE,
+  RGB_RAINBOWMONTAGE,
   RGB_RAINBOW,
   RGB_PARTYTIME,
+  RGB_MODES_NUM,
 };
+
 
 class RGBStrip {
 private:
-  Adafruit_NeoPixel _strip;
-  uint8_t _brightness;
-  RGB_Mode RGB_MODE = RGB_PARTYTIME;  // Animation mode of pixel
-  uint32_t animationSpeed = 64;       // 0 - 100 %
 
-  // HSV values of pixel
+  Adafruit_NeoPixel _strip;  // Neopixel object
+  uint8_t _brightness;
+
+  // Default HSV values of pixel
   uint16_t _hue = 10000;
   uint8_t _sat = 255;
   uint8_t _val = 255;
 
+  uint32_t animationSpeed = 20;  // 0 - 64
+  RGB_Mode RGB_MODE = RGB_MONTAGE;
   // Synthage default colors
   uint8_t colors[12][3] = {
     { 51, 86, 255 },   // Color 1 - LightBlue // Done
@@ -53,11 +60,56 @@ public:
     _strip.begin();
     _strip.setBrightness(_brightness);
     _strip.clear();
-
-    // synthageSetupCode();
   };
 
-  void setColor() {
+  // Getters
+  RGB_Mode getMode() {
+    return RGB_MODE;
+  }
+
+  uint16_t getHue() {
+    return _hue;
+  }
+
+  uint8_t getSat() {
+    return _sat;
+  }
+
+  uint8_t getVal() {
+    return _val;
+  }
+
+  uint8_t getBrightness() {
+    return _brightness;
+  }
+
+  void setMode(RGB_Mode rgb_mode) {
+    RGBStrip::RGB_MODE = rgb_mode;
+  }
+
+  void setColor(uint16_t hue, uint8_t sat, uint8_t val, uint8_t brightness) {
+    _hue = hue;
+    _sat = sat;
+    _val = val;
+    _brightness = brightness;
+    _strip.setBrightness(_brightness);
+  }
+
+  void nextColorMode() {
+    int8_t mode = static_cast<uint8_t>(RGB_MODE);
+    mode += 1;
+    mode = ((mode % RGB_MODES_NUM) + RGB_MODES_NUM) % RGB_MODES_NUM;
+    RGB_MODE = static_cast<RGB_Mode>(mode);
+  }
+
+  void previousColorMode() {
+    int8_t mode = static_cast<uint8_t>(RGB_MODE);
+    mode -= 1;
+    mode = ((mode % RGB_MODES_NUM) + RGB_MODES_NUM) % RGB_MODES_NUM;
+    RGB_MODE = static_cast<RGB_Mode>(mode);
+  }
+
+  void editColorAndAnimation() {
     _brightness = map(analogRead(A6), 0, 1023, 0, 255);
     _strip.setBrightness(_brightness);
 
@@ -68,6 +120,55 @@ public:
     update();
   }
 
+  void runningModeStartAnimation() {
+    _strip.setBrightness(150);
+    for (int i = 0; i < 3; i++) {                                         // For each pixel in strip...
+      uint32_t color = _strip.gamma32(_strip.ColorHSV(13000, 200, 255));  // hue -> RGB
+      _strip.setPixelColor(0, color);
+      _strip.show();  //  Update strip to match
+      delay(50);      //  Pause for a moment
+      _strip.clear();
+      _strip.show();  //  Update strip to match
+      delay(50);      //  Pause for a moment
+    }
+    _strip.setBrightness(_brightness);
+  }
+
+  void colorEditStartAnimation() {
+    _strip.setBrightness(150);
+    for (int i = 0; i < 3; i++) {                               // For each pixel in strip...
+      uint32_t color = _strip.gamma32(_strip.ColorHSV(50000));  // hue -> RGB
+      _strip.setPixelColor(0, color);
+      _strip.show();  //  Update strip to match
+      delay(50);      //  Pause for a moment
+      _strip.clear();
+      _strip.show();  //  Update strip to match
+      delay(50);      //  Pause for a moment
+    }
+    _strip.setBrightness(_brightness);
+  }
+
+  void channelEditStartAnimamtion() {
+    _strip.setBrightness(150);
+    for (int i = 0; i < 3; i++) {                              // For each pixel in strip...
+      uint32_t color = _strip.gamma32(_strip.ColorHSV(4000));  // hue -> RGB
+      _strip.setPixelColor(0, color);
+      _strip.show();  //  Update strip to match
+      delay(50);      //  Pause for a moment
+      _strip.clear();
+      _strip.show();  //  Update strip to match
+      delay(50);      //  Pause for a moment
+    }
+    _strip.setBrightness(_brightness);
+  }
+
+  void channelEditAnimation() {
+    uint16_t hue = GLOBAL_MIDI_CHANNEL * (65536 / 16);
+    uint32_t color = _strip.gamma32(_strip.ColorHSV(hue));
+    _strip.setPixelColor(0, color);
+    _strip.show();
+  }
+
   // No animation, displays selected HSV color ONLY
   void inanimate() {
     uint32_t color = _strip.gamma32(_strip.ColorHSV(_hue, _sat, _val));  // hue -> RGB
@@ -75,72 +176,150 @@ public:
     _strip.show();
   }
 
+  // void pulsar() {}
+
+  // A smooth fade animation inspired by the super knob animation on the Yamaha Montage 8
   void montage() {
-    // // This pattern is in four stages, increment, hold, decrement, hold.
-    // // Animation variables (Very similar to Synthage)
-    // uint16_t timeon = 600;  // milliseconds
-    // uint8_t timeoff = 10;   // milliseconds
-    // uint16_t steps = 40;    // frames per half-cycle
-    // static uint32_t RGB_timer = 0;
-    // uint16_t threshold = timeon / steps;
-    // static uint16_t RGB_count = 0;
-    // static uint8_t stage = 1;  // Begin animation at stage 1
+    // A smooth fade form HSV(_hue, _sat, _val) to HSV(_hue, _sat, 0) and back
+    // This pattern is in four stages, increment, hold, decrement, hold.
+    uint16_t timeon = map(animationSpeed, 0, 64, 100, 1000);  // in milliseconds
+    uint8_t frames = 60;                                      // frames per half-cycle
+    static uint32_t RGB_timer = 0;
+    uint16_t threshold = timeon / frames;
+    static float stepCount = 0;  // float must be used here instead of int
+                                 // This is because of the division (stepCount/frames) later in the code
+                                 // Using an integer other wise would return 0 rather a float
+                                 // In turn, 0 * pixelVal will ALWAYS return 0, as such the RGB LED will remain off
+    static uint8_t stage = 1;    // Begin animation at stage 1
 
-    // if (stage == 1) {
-    //   if (RGB_count < steps) {
-    //     if (millis() - RGB_timer >= threshold) {
-    //       _strip.setPixelColor(0, _strip.Color(((r * RGB_count) / steps), ((g * RGB_count) / steps), ((b * RGB_count) / steps)));
-    //       _strip.show();
-    //       RGB_timer = millis();
-    //       RGB_count++;
-    //     }
-    //   }
+    switch (stage) {
+      case 1:
+        if (stepCount < frames) {
+          if (millis() - RGB_timer < threshold) return;
+          stepCount++;
+          uint8_t pixelVal = _val * (stepCount / frames);
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(_hue, _sat, pixelVal));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();
+        } else if (stepCount == frames) {
+          stepCount = 0;
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(_hue, _sat, _val));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();  // Reset the RGB_timer variable
+          stage = 2;
+        }
+        break;
 
-    //   if (RGB_count == steps) {
-    //     RGB_count = 0;
-    //     _strip.setPixelColor(0, _strip.Color(r, g, b));
-    //     _strip.show();
-    //     RGB_timer = millis();  // Reset the RGB_timer variable
-    //     stage = 2;
-    //   }
+      case 2:
+        if (millis() - RGB_timer >= threshold) {
+          RGB_timer = millis();  // delay(timeOff)
+          stage = 3;
+        }
+        break;
 
+      case 3:
 
-    // } else if (stage == 2) {
-    //   if (millis() - RGB_timer >= timeoff) {
-    //     RGB_timer = millis();  // Reset the RGB_timer variable
-    //     stage = 3;
-    //   }
+        if (stepCount < frames) {
+          if (millis() - RGB_timer < threshold) return;
+          stepCount++;
+          uint8_t pixelVal = _val * ((frames - stepCount) / frames);
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(_hue, _sat, pixelVal));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();
+        } else if (stepCount == frames) {
+          stepCount = 0;
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(_hue, _sat, 0));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();  // Reset the RGB_timer variable
+          stage = 4;
+        }
+        break;
 
-    // } else if (stage == 3) {
+      case 4:
+        if (millis() - RGB_timer >= threshold) {
+          RGB_timer = millis();  // delay(timeOff)
+          stage = 1;
+        }
+        break;
+    }
+  }
 
-    //   if (RGB_count < steps) {
-    //     if (millis() - RGB_timer >= threshold) {
-    //       _strip.setPixelColor(0, _strip.Color(((r * (steps - RGB_count)) / steps), ((g * (steps - RGB_count)) / steps), ((b * (steps - RGB_count)) / steps)));
-    //       _strip.show();
-    //       RGB_timer = millis();
-    //       RGB_count++;
-    //     }
-    //   }
+  // Modified montage() animation but cycles through 16 colors
+  void rainbowMontage() {
+    // Hue change will go through 16 cycles beginning with red
+    static uint16_t pixelHue = 0;                             // Start from red
+    uint32_t cycles = 16;                                     // Number of expected cycles to go through
+    uint16_t timeon = map(animationSpeed, 0, 64, 100, 1000);  // in milliseconds
+    uint8_t frames = 60;                                      // frames per half-cycle
+    static uint32_t RGB_timer = 0;
+    uint16_t threshold = timeon / frames;
+    static uint8_t stepCount = 0;  // float must be used here instead of int
+    static uint8_t stage = 1;      // Begin animation at stage 1
 
-    //   if (RGB_count == steps) {
-    //     RGB_count = 0;
-    //     _strip.setPixelColor(0, _strip.Color(0, 0, 0));
-    //     _strip.show();
-    //     RGB_timer = millis();  // Reset the RGB_timer variable
-    //     stage = 4;
-    //   }
+    switch (stage) {
+      case 1:
+        if (stepCount < frames) {
+          if (millis() - RGB_timer < threshold) return;
+          stepCount++;
+          uint8_t pixelVal = (_val * stepCount) / frames;
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(pixelHue, _sat, pixelVal));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();
+        } else if (stepCount == frames) {
+          stepCount = 0;
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(pixelHue, _sat, _val));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();  // Reset the RGB_timer variable
+          stage = 2;
+        }
+        break;
 
-    // } else if (stage == 4) {
-    //   if (millis() - RGB_timer >= timeoff) {
-    //     RGB_timer = millis();  // Reset the RGB_timer variable
-    //     stage = 1;
-    //   }
-    // }
+      case 2:
+        if (millis() - RGB_timer >= threshold) {
+          RGB_timer = millis();  // delay(timeOff)
+          stage = 3;
+        }
+        break;
+
+      case 3:
+
+        if (stepCount < frames) {
+          if (millis() - RGB_timer < threshold) return;
+          stepCount++;
+          uint8_t pixelVal = (_val * (frames - stepCount)) / frames;
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(pixelHue, _sat, pixelVal));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();
+        } else if (stepCount == frames) {
+          stepCount = 0;
+          uint32_t color = _strip.gamma32(_strip.ColorHSV(pixelHue, _sat, 0));  // hue -> RGB
+          _strip.setPixelColor(0, color);
+          _strip.show();
+          RGB_timer = millis();  // Reset the RGB_timer variable
+          stage = 4;
+        }
+        break;
+
+      case 4:
+        if (millis() - RGB_timer >= threshold) {
+          RGB_timer = millis();  // delay(timeOff)
+          pixelHue += 65563 / cycles;
+          stage = 1;
+        }
+        break;
+    }
   }
 
   // Rainbow cycle along whole_strip. Pass delay time (in ms) between frames.
   // Modified from Adafruit Neopixel's library example "strandtest"
-  // Now runs without code blocking, without a for loop and the delay function.
+  // Now runs without code blocking, without a for loop and the delay() function.
   void rainbow() {
     uint8_t wait = map(animationSpeed, 0, 64, 0, 12);
     static uint16_t firstPixelHue = 0;  // any additions past 65536 will overflow
@@ -160,6 +339,8 @@ public:
   }
 
   // Rainbow-enhanced theater marquee. Pass delay time (in ms) between frames.
+  // Modified from Adafruit Neopixel's library example "strandtest", theaterChaseRainbow()
+  // Now runs without code blocking, without a for loop and the delay() function.
   void partyTime() {
     uint16_t wait = map(animationSpeed, 0, 100, 0, 500);
     static uint16_t pixelHue = _hue;  // First pixel starts at red (hue 0)
@@ -183,16 +364,19 @@ public:
     pixelIsOn = !pixelIsOn;  // Invert pixelIsOn variable
   }
 
-
   void update() {
     switch (RGB_MODE) {
       case RGB_STATIC:
         inanimate();
         break;
-      case RGB_PULSAR:
-        break;
+      // case RGB_PULSAR:
+      //   pulsar();
+      //   break;
       case RGB_MONTAGE:
         montage();
+        break;
+      case RGB_RAINBOWMONTAGE:
+        rainbowMontage();
         break;
       case RGB_RAINBOW:
         rainbow();

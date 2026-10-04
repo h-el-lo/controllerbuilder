@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "PitchWheel.h"
+#include "Buttons.h"
 #include <ResponsiveAnalogRead.h>
 
 class Joystick : public ResponsiveAnalogRead {
@@ -35,6 +36,8 @@ private:
   // ResponsiveAnalogRead
   inline static const float snapMultiplier = 0.01;
 
+  Button _joyButton;
+
 
 public:
   // Constructors
@@ -48,8 +51,10 @@ public:
 
   // Methods
   void readYAxis();
+  void channelAndColorUpdate();
   void updateXAxis();
   void updateYAxis();
+  void updateJoyButton();
   void update();
 };
 

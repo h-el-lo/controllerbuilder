@@ -5,7 +5,7 @@
 
 extern uint8_t GLOBAL_MIDI_CHANNEL;
 
-// These functions are defined as inline to prevent multiple definition errors if 
+// These functions are defined as inline to prevent multiple definition errors if
 // the header file passes through multiple translation units TLUs
 
 inline void controlChange(uint8_t channel, uint8_t control, uint8_t value) {

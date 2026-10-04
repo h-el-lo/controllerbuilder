@@ -1,9 +1,0 @@
-add modes : running, channel_edit, color edit
-
-joy button press 1: mod lock
-
-joy button ondouble press: channel edit
-
-onlongpress(3s): color edit 
-
-

@@ -9,19 +9,20 @@
 // else fire onPress
 
 #include <Arduino.h>
+#include "ControllerModes.h"
 #include "RGB.h"
 
 class Button {
 protected:
-  ButtonType _type;
   uint8_t _pin;
   bool _state = false;
   bool _pState = false;
   unsigned long _lastUpdated = 0;
 
   unsigned long _scanStartTime;
-  uint16_t _longPressTriggerTime = 2000;  // hold time required to trigger longpress in ms
-  uint16_t _veryLongPressTriggerTime = 3500;  // hold time required to trigger longpress in ms
+  uint16_t _longPressTriggerTime = 700;       // hold time required to trigger longpress in ms
+  uint16_t _veryLongPressTriggerTime = 1500;  // hold time required to trigger veryLongpress in ms
+  uint16_t _resetTriggerTime = 8000;          // hold time required to trigger reset in ms
 
   static const uint8_t DEBOUNCE_MS = 70;
 
@@ -39,4 +40,8 @@ public:
   void onPress();
   void onLongPress();
   void onVeryLongPress();
+  void onResetDevice();
 };
+
+
+#endif

@@ -8,9 +8,10 @@ struct Expression_Pedal {
   const uint8_t CONNECTION_CHECKER_PIN;
   bool isConnected;
 
-Expression_Pedal(uint8_t analogPin) : knob(analogPin, 11) {
+  Expression_Pedal(uint8_t analogPin)
+    : knob(analogPin, 11) {
     knob.disable();
-}
+  }
 
   void init() {
     knob.disable();
@@ -28,7 +29,7 @@ Expression_Pedal(uint8_t analogPin) : knob(analogPin, 11) {
         knob.enable();
       } else {
         knob.disable();
-      }  
+      }
     }
   }
 
